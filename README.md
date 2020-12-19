@@ -5,6 +5,8 @@ the project consist of two programs, **vpn client** AND **vpn server**
 1. learning & practise networking concept
 2. leanring & practise c programming
 
+## purpose of POC (prove of concept)
+POC is the folder which may contain part of the techniques/building-blocks for the vpn(client & server) implementation.
 
 ## Questions to ask for the vpn implementation
 ### 1. In client side, how to intercept all user traffic to the vpn-client program?
