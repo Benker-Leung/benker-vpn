@@ -1,6 +1,11 @@
 # Prove of concept (capture all user traffic)
 This **prove of concept** demonstrates 1 of the ways to collect all user packet by a program. There maybe some better way to do this as well >v<
 
+## steps to build the program
+```sh
+make build
+```
+
 ## steps to run, such that all traffic will go via tap0
 ```sh
 # run this for the first time
