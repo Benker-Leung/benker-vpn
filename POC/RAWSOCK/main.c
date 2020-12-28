@@ -5,8 +5,12 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
+#include <netinet/ether.h>
 #include <errno.h>
 #include <linux/tcp.h>
+#include <netpacket/packet.h>
+#include <linux/if.h>
+
 
 #define MAX_BUF 4096
 
@@ -60,9 +64,6 @@ tcp_csum(struct iphdr* ip_header, struct tcphdr* tcp_header, uint8_t* tcp_data) 
     if (tcp_data_bytes > 0)
         sum = summing(tcp_data, tcp_data_bytes, sum);
 
-    // 4500002965dc400040066c13c0a87aeaac4381091f9000500000007b00000000500060b284f7000041
-    // 4500002965dc400040066c13c0a87aeaac4381091f9000500000007b00000000500060b284f7000041 (wireshark)
-
     return ~((uint16_t)sum);
 }
 
@@ -71,29 +72,44 @@ int
 main() {
 
     struct sockaddr_in src_addr, dst_addr;
+    struct sockaddr_ll ll_addr;
+    struct ifreq ifreq_c;
+    memset(&ifreq_c, 0, sizeof(struct ifreq));
+    strncpy(ifreq_c.ifr_ifru.ifru_newname, "eth0", IFNAMSIZ-1);
 
     int packet_size;
 
     uint8_t buffer[MAX_BUF];
     buffer[40] = 65;
 
-    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-    // int sock = socket(AF_PACKET, SOCK_RAW, ntohs(ETH_P_ALL));
+    // int sock = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    int sock = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
     if (sock == -1)
     {
         perror("Fail to create socket");
         exit(1);
     }
 
-    int one = 1;
-    const int *val = &one;
-    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
-    {
-        printf ("Error setting IP_HDRINCL. Error number : %d . Error message : %s \n" , errno , strerror(errno));
-        exit(0);
+    // int one = 1;
+    // const int *val = &one;
+    // if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
+    // {
+    //     printf ("Error setting IP_HDRINCL. Error number : %d . Error message : %s \n" , errno , strerror(errno));
+    //     exit(0);
+    // }
+
+    struct ethhdr *test_frame = (struct ethhdr*)buffer;
+    test_frame->h_proto = htons(ETH_P_IP);
+    if (ether_aton_r("52:54:0:a:19:ff", (struct ether_addr*)test_frame->h_source) == NULL) {
+        printf("invalid src mac addr\n");
+        exit(EXIT_FAILURE);
+    }
+    if (ether_aton_r("52:54:0:48:1c:20", (struct ether_addr*)test_frame->h_dest) == NULL) {
+        printf("invalid dst mac addr\n");
+        exit(EXIT_FAILURE);
     }
 
-    struct iphdr *test_packet = (struct iphdr *)buffer;
+    struct iphdr *test_packet = (struct iphdr *)(buffer+sizeof(struct ethhdr));
 
     test_packet->version = 0x4;    // version
     test_packet->ihl = 0x5;       // ip header length
@@ -112,7 +128,7 @@ main() {
     dst_addr.sin_port = htons(80);
     dst_addr.sin_addr.s_addr = inet_addr("172.67.129.9");
 
-    struct tcphdr *test_segment = (struct tcphdr *)(buffer+(test_packet->ihl*4));
+    struct tcphdr *test_segment = (struct tcphdr *)(buffer + sizeof(struct ethhdr) + (test_packet->ihl*4));
     test_segment->source = htons(8080);
     test_segment->dest = htons(80);
     test_segment->seq = htonl(123);
@@ -133,21 +149,30 @@ main() {
     test_segment->urg_ptr = 0;
     test_segment->check = htons(tcp_csum(test_packet, test_segment, buffer+40));
 
-    int n = sendto(sock, buffer, 41, 0, (struct sockaddr *)&dst_addr, sizeof(dst_addr));
+    // int n = sendto(sock, buffer, 41, 0, (struct sockaddr *)&dst_addr, sizeof(dst_addr));     // sending IP + TCP
+
+    memset(&ll_addr, 0, sizeof(struct sockaddr_ll));
+    ll_addr.sll_family = AF_PACKET;
+    memcpy(ll_addr.sll_addr, test_frame->h_dest, 6);
+    ll_addr.sll_halen = ETH_ALEN;
+    ll_addr.sll_ifindex = 2;
+    ll_addr.sll_protocol = ETH_P_IP;
+    int n = sendto(sock, buffer, 57, 0, (struct sockaddr *)&ll_addr, sizeof(ll_addr));        // sending L2 + IP + TCP
     printf("total sent [%d]\n", n);
     // printf("tcp check sum: %u\n", tcp_csum(test_packet, test_segment, buffer+40));
 
     printf("header: \n");
-    for (packet_size=0; packet_size < 41; packet_size++) {
-        printf("%02x", ((uint8_t*)buffer)[packet_size]);
+    for (packet_size=0; packet_size < 57; packet_size++) {
+        printf("%02x ", ((uint8_t*)buffer)[packet_size]);
     }
     printf("\n");
 
 
     return 0;
 
-    struct iphdr *ip_header = (struct iphdr *)buffer;
-    struct tcphdr *tcp_header = (struct tcphdr *)buffer;
+    struct ethhdr *ether_header;
+    struct iphdr *ip_header;
+    struct tcphdr *tcp_header;
 
     while(1) {
         
@@ -156,34 +181,54 @@ main() {
             printf("Failed to get packets\n");
             return 1;
         }
-        // point to tcp header
-        tcp_header = (struct tcphdr *)(buffer+ip_header->ihl*4);
 
-        // some filter on ip header
-        if (ip_header->protocol != IPPROTO_TCP) {
-            printf("non tcp\n\n");
-            continue;
+        ether_header = (struct ethhdr*)buffer;
+        if (htons(ether_header->h_proto) == ETH_P_IP || 1) {
+
+            int i;
+            printf("header: \n");
+            for (i=0; i < packet_size; i++) {
+                printf("%02x", ((uint8_t*)buffer)[i]);
+            }
+            printf("\n");
+
+            printf("src mac: %s\n", ether_ntoa((struct ether_addr*)ether_header->h_source));
+            printf("dst mac: %s\n", ether_ntoa((struct ether_addr*)ether_header->h_dest));
+            printf("protocol: 0x%04x\n", ntohs(ether_header->h_proto));
+            printf("\n");
         }
-        if (htons(tcp_header->source) != 80) {
-            continue;
-        }
 
-        memset(&src_addr, 0, sizeof(src_addr));
-        src_addr.sin_addr.s_addr = ip_header->saddr;
-        memset(&dst_addr, 0, sizeof(dst_addr));
-        dst_addr.sin_addr.s_addr = ip_header->daddr;
+        // 0180c2000000fe54000a19ff002642420300000000008000525400481c20000000008000525400481c2080020000140002000200 (code)
+        // 000200010006fe54000a19ff0000000442420300000000008000525400481c20000000008000525400481c2080020000140002000200 (wireshark)
 
-        printf("\n\nIncoming Packets: \n");
-        printf("Packet Size (bytes): %d\n", ntohs(ip_header->tot_len));
-        printf("Src addr: %s\n", (char*)inet_ntoa(src_addr.sin_addr));
-        printf("Dst addr: %s\n", (char*)inet_ntoa(dst_addr.sin_addr));
-        printf("Packet Size (bytes): %d\n", ntohs(ip_header->tot_len));
-        printf("ID: [%d]\n", ntohs(ip_header->id));
-        printf("checksum correct: %d\n", !ip_csum(ip_header));
-        printf("src port: %d\n", ntohs(tcp_header->source));
-        printf("dst port: %d\n", ntohs(tcp_header->dest));
+        // // point to tcp header
+        // tcp_header = (struct tcphdr *)(buffer+ip_header->ihl*4);
 
-        memset(buffer, 0, MAX_BUF);
+        // // some filter on ip header
+        // if (ip_header->protocol != IPPROTO_TCP) {
+        //     printf("non tcp\n\n");
+        //     continue;
+        // }
+        // if (htons(tcp_header->source) != 80) {
+        //     continue;
+        // }
+
+        // memset(&src_addr, 0, sizeof(src_addr));
+        // src_addr.sin_addr.s_addr = ip_header->saddr;
+        // memset(&dst_addr, 0, sizeof(dst_addr));
+        // dst_addr.sin_addr.s_addr = ip_header->daddr;
+
+        // printf("\n\nIncoming Packets: \n");
+        // printf("Packet Size (bytes): %d\n", ntohs(ip_header->tot_len));
+        // printf("Src addr: %s\n", (char*)inet_ntoa(src_addr.sin_addr));
+        // printf("Dst addr: %s\n", (char*)inet_ntoa(dst_addr.sin_addr));
+        // printf("Packet Size (bytes): %d\n", ntohs(ip_header->tot_len));
+        // printf("ID: [%d]\n", ntohs(ip_header->id));
+        // printf("checksum correct: %d\n", !ip_csum(ip_header));
+        // printf("src port: %d\n", ntohs(tcp_header->source));
+        // printf("dst port: %d\n", ntohs(tcp_header->dest));
+
+        // memset(buffer, 0, MAX_BUF);
 
     }
 

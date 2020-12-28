@@ -1,1 +1,4 @@
 *.exe
+*.pcap
+*.o
+objects/
