@@ -5,9 +5,9 @@ all: client
 
 .PHONY: client
 
-server: objects/udp.o objects/protocol_headers.o objects/tcp_session.o server/main.c
+server: objects/udp.o objects/protocol_headers.o objects/packet_handler.o objects/session_struct.o server/main.c
 	$(CC) $(CFLAGS) -c server/main.c -o objects/server.o
-	$(CC) $(CFLAGS) -o server.exe objects/server.o objects/udp.o objects/protocol_headers.o objects/tcp_session.o
+	$(CC) $(CFLAGS) -o server.exe objects/server.o objects/udp.o objects/protocol_headers.o objects/packet_handler.o objects/session_struct.o
 
 client: objects/main.o objects/udp.o
 	$(CC) $(CFLAGS) -o client.exe objects/main.o objects/udp.o
@@ -16,8 +16,11 @@ objects/main.o: client/main.c lib/udp.h
 	$(CC) $(CFLAGS) -c client/main.c -o objects/main.o
 
 # TODO: find a way to reduce multiple ".o"
-objects/tcp_session.o: lib/tcp_session.h lib/tcp_session.c lib/protocol_headers.h
-	$(CC) $(CFLAGS) -c lib/tcp_session.c -o objects/tcp_session.o
+objects/session_struct.o: lib/session_struct.h lib/session_struct.c
+	$(CC) $(CFLAGS) -c lib/session_struct.c -o objects/session_struct.o
+
+objects/packet_handler.o: lib/packet_handler.h lib/packet_handler.c lib/protocol_headers.h
+	$(CC) $(CFLAGS) -c lib/packet_handler.c -o objects/packet_handler.o
 
 objects/protocol_headers.o: lib/protocol_headers.c lib/protocol_headers.h
 	$(CC) $(CFLAGS) -c lib/protocol_headers.c -o objects/protocol_headers.o

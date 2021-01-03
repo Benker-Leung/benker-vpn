@@ -4,7 +4,7 @@ the expected outcome of this project is to build **vpn client** AND **vpn server
 ---
 
 ## Progress
-still learning concepts
+start writing bugs
 
 ---
 

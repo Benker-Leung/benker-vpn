@@ -69,7 +69,7 @@ uint16_t tcp_csum(struct iphdr* ip_header, struct tcphdr* tcp_header, uint8_t* t
 }
 
 
-int validate_ip_tcp(uint8_t *buffer, int buffer_size) {
+int validate_ip_tcp(uint8_t *buffer, int buffer_size, struct iphdr** ip_header_ptr, struct tcphdr** tcp_header_ptr) {
     // ensure size at least fit ip header + tcp hedaer
     if (sizeof(struct iphdr) + sizeof(struct tcphdr) > buffer_size) {
         return INVALID_IP_TCP;
@@ -93,6 +93,10 @@ int validate_ip_tcp(uint8_t *buffer, int buffer_size) {
     if (ntohs(ip_header->tot_len) < ip_header_len + tcp_header->doff*4) {
         return INVALID_IP_TCP;
     }
+    if (ip_header_ptr != NULL)
+        *ip_header_ptr = ip_header;
+    if (tcp_header_ptr != NULL)
+        *tcp_header_ptr = tcp_header;
     return VALID_IP_TCP;
 }
 

@@ -3,7 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "../lib/udp.h"
-#include "../lib/tcp_session.h"
+#include "../lib/packet_handler.h"
+#include "../lib/session_struct.h"
 #include <netinet/ether.h>
 #include <netpacket/packet.h>
 #include <linux/if.h>
@@ -11,8 +12,32 @@
 #define MAX_BUF 3000
 #define LOCAL_PORT 8080
 
-// Trial reset
+// Trial session
 int main() {
+
+    struct session_hash_table table;
+    init_hash_table(&table, 100, 10000, 20000);
+
+    // struct tcp_session* session = add_tcp_session(&table, 1, 1, 5);
+    // struct tcp_session* result = get_tcp_session_by_client(&table, 1, 1);
+    // printf("server port: %d, expire unix-time: %ld\n", result->server_port, result->expire);
+
+
+    int i;
+    for (i=0; i<10; i++) {
+        add_tcp_session(&table, i, i, 0);
+    }
+    sleep(2);
+
+    print_session_hash_table(&table);
+
+    delete_hash_table(&table);
+    
+    return 0;
+}
+
+// Trial reset
+int main3() {
     // struct sockaddr_in src_addr, dst_addr;
     struct sockaddr_ll ll_addr;
     struct ifreq ifreq_c;
@@ -52,7 +77,7 @@ int main() {
                 memcpy(ether_header->h_dest, tempChar, 6);
                 // update
                 memcpy(ll_addr.sll_addr, ether_header->h_dest, 6);
-                printf("going to send %d bytes\n", sizeof(struct ethhdr)+temp);
+                printf("going to send %lu bytes\n", sizeof(struct ethhdr)+temp);
                 frame_size = sendto(sock, buffer, sizeof(struct ethhdr)+temp, 0, (struct sockaddr*)&ll_addr, sizeof(ll_addr));
                 printf("sent %d\n", frame_size);
             }

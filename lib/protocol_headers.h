@@ -12,10 +12,14 @@
  * 
  * @param buffer the buffer pointing to the first byte of the ip header
  * @param buffer_size the size of buffer in bytes
+ * @param ip_header store the ip header if valid & it is not NULL
+ * @param tcp_header store the tcp header if valid & it is not NULL
  * 
- * @return 1 if it is valid, else 0
+ * @return VALID_IP_TCP if it is valid
+ *         INVALID_IP_TCP if not valid
 */
-int validate_ip_tcp(uint8_t *buffer, int buffer_size);
+int validate_ip_tcp(uint8_t *buffer, int buffer_size, struct iphdr** ip_header, struct tcphdr** tcp_header);
+
 
 /**
  * replace the source port with given port, and the tcp checksum will be recalculated
@@ -51,5 +55,6 @@ void replace_src_ip(uint8_t *buffer, uint32_t ip);
  * 
 */
 int fillin_reset(uint8_t *buffer);
+
 
 #endif
