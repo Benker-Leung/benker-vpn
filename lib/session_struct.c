@@ -1,5 +1,53 @@
 #include "session_struct.h"
 
+/**
+ * insert a new tcp_session item into the linked list
+ * 
+ * @param pointer to the array of pointers of session_linked_list (add a head to it if not yet exist)
+ * @param session the tcp session pointer
+ * 
+*/
+void insert_tcp_session(struct session_linked_list** head, struct tcp_session* session);
+
+/**
+ * search a tcp session from the linked list by client ip & port
+ * 
+ * @param head the pointer to the head of the tcp_session
+ * @param client_ip the client ip addr
+ * @param client_port the client port
+ * 
+ * @return pointer to the tcp_session if found
+ *         NULL if not found
+*/
+struct tcp_session* search_tcp_session_by_client(struct session_linked_list* head, uint32_t client_ip, uint16_t client_port);
+
+/**
+ * search a tcp session from the linked list by server port
+ * 
+ * @param head the pointer to the head of the tcp_session
+ * @param server_port the server port
+ * 
+ * @return pointer to the tcp_session if found
+ *         NULL if not found
+*/
+struct tcp_session* search_tcp_session_by_server(struct session_linked_list* head, uint16_t server_port);
+
+/**
+ * delete expired session (free the memory)
+ * 
+ * @param pointer to the array of pointers of session_linked_list
+ * 
+*/
+void delete_expired_session(struct session_linked_list** head);
+
+/**
+ * delete all session (free the memory of linked-list and also sessions)
+ * 
+ * @param pointer to the head of the session_linked_list
+ * @param remove_session indicate whether session also need to be "freed" or not (in case of two linked-list using same session)
+*/
+void delete_all_session(struct session_linked_list* head, int remove_session);
+
 void print_session_linked_list(struct session_linked_list* head) {
     while (head != NULL) {
         printf("\t\t client ip: %d\n", head->session->client_ip);
@@ -141,6 +189,7 @@ struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint3
         return session;
     }
     uint16_t server_port;
+    int count;
     do {
         server_port = (hash_table->next_num % (hash_table->mod_num)) + hash_table->min_port;
         hash_table->next_num++;
@@ -148,7 +197,11 @@ struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint3
         if (session == NULL) {
             break;
         }
-        // TODO: add some other condition to avoid infinity loop (no available server port)
+        ++count;
+        // no available port
+        if (count > hash_table->mod_num) {
+            return NULL;
+        }
     } while(1);
     int hash_server = server_port%hash_table->len;
     // create a new session

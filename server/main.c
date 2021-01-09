@@ -16,16 +16,21 @@
 int main() {
 
     struct session_hash_table table;
-    init_hash_table(&table, 100, 10000, 20000);
+    init_hash_table(&table, 100, 10000, 10010);
 
     // struct tcp_session* session = add_tcp_session(&table, 1, 1, 5);
     // struct tcp_session* result = get_tcp_session_by_client(&table, 1, 1);
     // printf("server port: %d, expire unix-time: %ld\n", result->server_port, result->expire);
 
 
+    struct tcp_session* session;
     int i;
     for (i=0; i<10; i++) {
-        add_tcp_session(&table, i, i, 0);
+        session = add_tcp_session(&table, i, i, i);
+        if (session == NULL) {
+            printf("No available port\n");
+            break;
+        }
     }
     sleep(2);
 
