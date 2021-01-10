@@ -117,6 +117,7 @@ int main() {
     if (handle_client_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
         printf("invalid session for 1st SYN\n");
     }
+    sleep(2);
     // second SYN
     pos = packets[1];
     for (i=0; i<strlen(packets[0])/2; i++) {

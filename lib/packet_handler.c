@@ -16,7 +16,7 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
     } else {
         session = get_tcp_session_by_client(table, ntohl(ip_header->saddr), ntohs(tcp_header->source));
     }
-    if (session == NULL) {
+    if (session == NULL || session_expired(session)) {
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
     }
@@ -81,10 +81,12 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
     struct tcp_session* session;
     // get session
     session = get_tcp_session_by_server(table, ntohs(tcp_header->dest));
-    if (session == NULL) {
+    if (session == NULL || session_expired(session)) {
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
     }
+
+    // TODO: check session expiration
 
     // TODO: handle tcp flags (ignore the validation & update of expire first)
     if (tcp_header->syn && tcp_header->ack && session->syn_state == 0) {

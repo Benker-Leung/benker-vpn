@@ -61,6 +61,15 @@ struct session_hash_table {
 };
 
 /**
+ * check if a session is expired
+ * 
+ * @param session pointer to the session
+ * 
+ * @return non-zero if expired, else 0
+*/
+int session_expired(struct tcp_session* session);
+
+/**
  * print the session linked list, mainly for debug usage
  * 
  * @param head the pointer to the first element

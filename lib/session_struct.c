@@ -48,6 +48,14 @@ void delete_expired_session(struct session_linked_list** head);
 */
 void delete_all_session(struct session_linked_list* head, int remove_session);
 
+int session_expired(struct tcp_session* session) {
+    if ((difftime(time(NULL), session->expire)) > 0.0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 void print_session_linked_list(struct session_linked_list* head) {
     while (head != NULL) {
         printf("\t\t client ip: %d\n", head->session->client_ip);
