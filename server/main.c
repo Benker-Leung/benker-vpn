@@ -12,8 +12,125 @@
 #define MAX_BUF 3000
 #define LOCAL_PORT 8080
 
-// Trial session
+// takes 2 character
+uint8_t decode_to_bytes(char* str) {
+    uint8_t result = 0;
+    int i=0;
+    while (i<2) {
+        // printf("Debug char: %c\n", *str);
+        switch (*str) {
+            case '0':
+                result += 0;
+                break;
+            case '1':
+                result += 1;
+                break;
+            case '2':
+                result += 2;
+                break;
+            case '3':
+                result += 3;
+                break;
+            case '4':
+                result += 4;
+                break;
+            case '5':
+                result += 5;
+                break;
+            case '6':
+                result += 6;
+                break;
+            case '7':
+                result += 7;
+                break;
+            case '8':
+                result += 8;
+                break;
+            case '9':
+                result += 9;
+                break;
+            case 'a':
+                result += 10;
+                break;
+            case 'b':
+                result += 11;
+                break;
+            case 'c':
+                result += 12;
+                break;
+            case 'd':
+                result += 13;
+                break;
+            case 'e':
+                result += 14;
+                break;
+            case 'f':
+                result += 15;
+                break;
+        }
+        i++; str++;
+        if (i==1) {
+            result <<= 4;
+        }
+    }
+    return result;
+}
+
+// Trial handle tcp flag
 int main() {
+    struct session_hash_table table;
+    init_hash_table(&table, 100, 10000, 10010);
+
+    // initialize the packets (from syn to fin)
+    // const char packet1[] = "4510003ce73b400040066479c0a80102ac43810980a00050c6510d3d00000000a002faf0f41e0000020405b40402080a3b0fda6a0000000001030307";
+    // const char packet2[] = "4500003400004000370654cdac438109c0a80102005080a01a8f34f6c6510d3e8012ffffdc3d000002040578010104020103030a";
+    // const char packet3[] = "45100028e73c40004006648cc0a80102ac43810980a00050c6510d3e1a8f34f7501001f61ae10000";
+    // const char packet4[] = "4510002de73d400040066486c0a80102ac43810980a00050c6510d3e1a8f34f7501801f614e10000fff4fffd06";
+    // const char packet5[] = "450000283159400037062380ac438109c0a80102005080a01a8f34f7c6510d43501000401c920000";
+    // const char packet6[] = "45000164315a400037062243ac438109c0a80102005080a01a8f34f7c6510d435018004026fb0000485454502f312e31203430302042616420526571756573740d0a5365727665723a20636c6f7564666c6172650d0a446174653a2053756e2c203130204a616e20323032312031333a34363a343720474d540d0a436f6e74656e742d547970653a20746578742f68746d6c0d0a436f6e74656e742d4c656e6774683a203135350d0a436f6e6e656374696f6e3a20636c6f73650d0a43462d5241593a202d0d0a0d0a3c68746d6c3e0d0a3c686561643e3c7469746c653e3430302042616420526571756573743c2f7469746c653e3c2f686561643e0d0a3c626f64793e0d0a3c63656e7465723e3c68313e3430302042616420526571756573743c2f68313e3c2f63656e7465723e0d0a3c68723e3c63656e7465723e636c6f7564666c6172653c2f63656e7465723e0d0a3c2f626f64793e0d0a3c2f68746d6c3e0d0a";
+    // const char packet7[] = "45100028e73e40004006648ac0a80102ac43810980a00050c6510d431a8f3633501001f419a20000";
+    // const char packet8[] = "45000028315b40003706237eac438109c0a80102005080a01a8f3633c6510d43501100401b550000";
+    // const char packet9[] = "45100028e73f400040066489c0a80102ac43810980a00050c6510d431a8f3634501101f5199f0000";
+    // const char packet10[] = "45000028315c40003706237dac438109c0a80102005080a01a8f3634c6510d44501000401b540000";
+    const char *packets[] = {
+        "4510003ce73b400040066479c0a80102ac43810980a00050c6510d3d00000000a002faf0f41e0000020405b40402080a3b0fda6a0000000001030307",
+        "4500003400004000370654cdac438109c0a80102005080a01a8f34f6c6510d3e8012ffffdc3d000002040578010104020103030a",
+        "45100028e73c40004006648cc0a80102ac43810980a00050c6510d3e1a8f34f7501001f61ae10000",
+        "4510002de73d400040066486c0a80102ac43810980a00050c6510d3e1a8f34f7501801f614e10000fff4fffd06",
+        "450000283159400037062380ac438109c0a80102005080a01a8f34f7c6510d43501000401c920000",
+        "45000164315a400037062243ac438109c0a80102005080a01a8f34f7c6510d435018004026fb0000485454502f312e31203430302042616420526571756573740d0a5365727665723a20636c6f7564666c6172650d0a446174653a2053756e2c203130204a616e20323032312031333a34363a343720474d540d0a436f6e74656e742d547970653a20746578742f68746d6c0d0a436f6e74656e742d4c656e6774683a203135350d0a436f6e6e656374696f6e3a20636c6f73650d0a43462d5241593a202d0d0a0d0a3c68746d6c3e0d0a3c686561643e3c7469746c653e3430302042616420526571756573743c2f7469746c653e3c2f686561643e0d0a3c626f64793e0d0a3c63656e7465723e3c68313e3430302042616420526571756573743c2f68313e3c2f63656e7465723e0d0a3c68723e3c63656e7465723e636c6f7564666c6172653c2f63656e7465723e0d0a3c2f626f64793e0d0a3c2f68746d6c3e0d0a",
+        "45100028e73e40004006648ac0a80102ac43810980a00050c6510d431a8f3633501001f419a20000",
+        "45000028315b40003706237eac438109c0a80102005080a01a8f3633c6510d43501100401b550000",
+        "45100028e73f400040066489c0a80102ac43810980a00050c6510d431a8f3634501101f5199f0000",
+        "45000028315c40003706237dac438109c0a80102005080a01a8f3634c6510d44501000401b540000",
+        "10"
+    };
+
+    uint8_t buffer[MAX_BUF];
+    int rst_size, i;
+    
+    // first SYN
+    char* pos = packets[0];
+    for (i=0; i<strlen(packets[0])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_client_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session\n");
+    }
+
+    // TODO: continue to test the handling
+
+    print_session_hash_table(&table);
+
+    delete_hash_table(&table);
+    
+    return 0;
+
+}
+
+// Trial session
+int main4() {
 
     struct session_hash_table table;
     init_hash_table(&table, 100, 10000, 10010);
@@ -75,7 +192,7 @@ int main3() {
         }
         ether_header = (struct ethhdr*)buffer;
         if (htons(ether_header->h_proto) == ETH_P_IP) {
-            if (INVALID_SESSION == handle_client_packet(buffer+sizeof(struct ethhdr), frame_size, &temp)) {
+            if (INVALID_SESSION == handle_client_packet(NULL, buffer+sizeof(struct ethhdr), frame_size, &temp)) {
                 // swap mac addr
                 memcpy(tempChar, ether_header->h_source, 6);
                 memcpy(ether_header->h_source, ether_header->h_dest, 6);

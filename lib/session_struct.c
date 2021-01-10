@@ -53,7 +53,9 @@ void print_session_linked_list(struct session_linked_list* head) {
         printf("\t\t client ip: %d\n", head->session->client_ip);
         printf("\t\t client port: %d\n", head->session->client_port);
         printf("\t\t server port: %d\n", head->session->server_port);
-        printf("\t\t state: %d\n", head->session->state);
+        printf("\t\t SYN-state: %d\n", head->session->syn_state);
+        printf("\t\t client-fin-state: %d\n", head->session->client_fin_state);
+        printf("\t\t server-fin-state: %d\n", head->session->server_fin_state);
         if ((difftime(time(NULL), head->session->expire)) > 0.0) {
             printf("\t\t expired\n");
         } else {
@@ -180,7 +182,7 @@ void clean_expired_session(struct session_hash_table* hash_table) {
     return;
 }
 
-struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint32_t client_ip, uint16_t client_port, int default_timeout_in_minute) {
+struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint32_t client_ip, uint16_t client_port, int default_timeout_in_second) {
     // get the hash value
     int hash_client = ((client_ip + client_port)%(hash_table->len));
     struct tcp_session* session = search_tcp_session_by_client(hash_table->list_client_key[hash_client], client_ip, client_port);
@@ -209,8 +211,7 @@ struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint3
     session->client_ip = client_ip;
     session->client_port = client_port;
     session->server_port = server_port;
-    session->state = 0;
-    session->expire = time(NULL) + (default_timeout_in_minute * MINUTE);
+    session->expire = time(NULL) + (default_timeout_in_second);
     // insert session to two list
     insert_tcp_session(&(hash_table->list_client_key[hash_client]), session);
     insert_tcp_session(&(hash_table->list_server_key[hash_server]), session);

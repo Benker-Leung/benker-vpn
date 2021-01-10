@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define MINUTE 300
-
 /*
     The functions here mainly just handle the operation of 
     1. add
@@ -20,19 +18,28 @@ struct tcp_session {
     uint32_t client_ip;     // client ip address, 1 means 0.0.0.1, the ip of the vpn-client
     uint16_t client_port;   // client port, 80 means port 80, the port used in vpn-client for this tcp session
     uint16_t server_port;   // server port, 80 means port 80, the port used in vpn-server for this tcp session
-    uint32_t last_state_seq;// last state (SYN or FIN) packet's sequence number, 123 means 123
+    uint32_t client_last_state_seq; // last state (SYN or FIN) packet's sequence number, 123 means 123, if ack larger than this, then the state is acked
+    uint32_t server_last_state_seq; // last state (SYN or FIN) packet's sequence number, 123 means 123, if ack larger than this, then the state is acked
     /*
         state:
         0   --> 1st SYN received
         1   --> 1st SYN ACK received
         2   --> 2nd SYN received
-        3   --> 2nd SYN ACK received
-        4   --> 1st FIN received
-        5   --> 1st FIN ACK received
-        6   --> 2nd FIN received
-        7   --> 2nd FIN ACK received
+        3   --> 2nd SYN ACK received (session created)
     */
-    uint8_t state;
+    uint8_t syn_state;
+    /*
+        state:
+        1   --> FIN sent by server
+        2   --> ACK received from client
+    */
+    uint8_t client_fin_state;
+    /*
+        state:
+        1   --> FIN sent by client
+        2   --> ACK received from server
+    */
+    uint8_t server_fin_state;
     time_t expire;           // this session expires if difftime(now, expire) gives positive
 };
 
@@ -102,13 +109,13 @@ void clean_expired_session(struct session_hash_table* hash_table);
  * @param hash_table the pointer to the hash table
  * @param client_ip the client ip addr (1 means 0.0.0.1)
  * @param client_port the client port (80 means port 80)
- * @param default_timeout_in_minute timeout after x minutes
+ * @param default_timeout_in_second timeout after x second
  * 
  * @return tcp_session pointer to the session
  *         NULL if all ports used up
  * 
 */
-struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint32_t client_ip, uint16_t client_port, int default_timeout_in_minute);
+struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint32_t client_ip, uint16_t client_port, int default_timeout_in_second);
 
 /**
  * find a tcp session from the table
