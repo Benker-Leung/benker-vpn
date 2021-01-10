@@ -144,6 +144,33 @@ int main() {
     if (handle_client_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
         printf("invalid session for normal data\n");
     }
+    // 1st FIN
+    pos = packets[7];
+    for (i=0; i<strlen(packets[0])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_world_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session for 1st FIN\n");
+    }
+    // 2nd FIN
+    pos = packets[8];
+    for (i=0; i<strlen(packets[0])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_client_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session for 2nd FIN\n");
+    }
+    // final ACK
+    pos = packets[9];
+    for (i=0; i<strlen(packets[0])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_world_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session for final ACK\n");
+    }
 
     // TODO: continue to test the handling
 
