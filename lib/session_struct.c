@@ -218,11 +218,11 @@ struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint3
     return session;
 }
 
-struct tcp_session* get_tcp_session_by_client(struct session_hash_table* hash_table, uint32_t client_ip, uint32_t client_port) {
+struct tcp_session* get_tcp_session_by_client(struct session_hash_table* hash_table, uint32_t client_ip, uint16_t client_port) {
     return search_tcp_session_by_client(hash_table->list_client_key[(client_ip + client_port)%hash_table->len], client_ip, client_port);
 }
 
-struct tcp_session* get_tcp_session_by_server(struct session_hash_table* hash_table, uint32_t server_port) {
+struct tcp_session* get_tcp_session_by_server(struct session_hash_table* hash_table, uint16_t server_port) {
     return search_tcp_session_by_server(hash_table->list_server_key[server_port%hash_table->len], server_port);
 }
 

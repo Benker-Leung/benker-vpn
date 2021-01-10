@@ -127,7 +127,7 @@ struct tcp_session* add_tcp_session(struct session_hash_table* hash_table, uint3
  * @return tcp_session pointer if found
  *         NULL if not exist
 */
-struct tcp_session* get_tcp_session_by_client(struct session_hash_table* hash_table, uint32_t client_ip, uint32_t client_port);
+struct tcp_session* get_tcp_session_by_client(struct session_hash_table* hash_table, uint32_t client_ip, uint16_t client_port);
 
 /**
  * find a tcp session from the table
@@ -138,6 +138,6 @@ struct tcp_session* get_tcp_session_by_client(struct session_hash_table* hash_ta
  * @return tcp_session pointer if found
  *         NULL if not exist
 */
-struct tcp_session* get_tcp_session_by_server(struct session_hash_table* hash_table, uint32_t server_port);
+struct tcp_session* get_tcp_session_by_server(struct session_hash_table* hash_table, uint16_t server_port);
 
 #endif

@@ -14,7 +14,7 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
     if (tcp_header->syn) {
         session = add_tcp_session(table, ntohl(ip_header->saddr), ntohs(tcp_header->source), 1);
     } else {
-        session = get_tcp_session_by_client(table, ntohl(ip_header->saddr), ntohl(tcp_header->source));
+        session = get_tcp_session_by_client(table, ntohl(ip_header->saddr), ntohs(tcp_header->source));
     }
     if (session == NULL) {
         *rst_size = fillin_reset(buffer);
@@ -73,25 +73,21 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
     struct iphdr *ip_header;
     struct tcphdr *tcp_header;
     // TODO, remove the || 1
-    if (validate_ip_tcp(buffer, buffer_len, &ip_header, &tcp_header) == INVALID_IP_TCP || 1) {
+    if (validate_ip_tcp(buffer, buffer_len, &ip_header, &tcp_header) == INVALID_IP_TCP) {
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
     }
 
     struct tcp_session* session;
     // get session
-    if (tcp_header->syn) {
-        session = add_tcp_session(table, ntohl(ip_header->saddr), ntohs(tcp_header->source), 1);
-    } else {
-        session = get_tcp_session_by_client(table, ntohl(ip_header->saddr), ntohl(tcp_header->source));
-    }
+    session = get_tcp_session_by_server(table, ntohs(tcp_header->dest));
     if (session == NULL) {
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
     }
 
     // TODO: handle tcp flags (ignore the validation & update of expire first)
-    if (tcp_header->syn && tcp_header->ack && session->syn_state == 1) {
+    if (tcp_header->syn && tcp_header->ack && session->syn_state == 0) {
         session->syn_state = 2;
     }
     else {
