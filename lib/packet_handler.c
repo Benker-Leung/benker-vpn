@@ -21,12 +21,12 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
         return INVALID_SESSION;
     }
 
-    // TODO: handle tcp flags (ignore the validation & update of expire first)
+    // handle tcp flags
     if (tcp_header->syn && session->syn_state == 0) {
-
+        session->client_last_state_seq = htonl(tcp_header->seq);
     }
     else {
-        if (tcp_header->ack) {
+        if (tcp_header->ack && htonl(tcp_header->ack_seq) > session->server_last_state_seq) {
             if (session->syn_state == 2) {
                 session->syn_state = 3;
             }
@@ -37,6 +37,7 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
         if (tcp_header->fin) {
             if (session->server_fin_state == 0) {
                 session->server_fin_state = 1;
+                session->client_last_state_seq = htonl(tcp_header->seq);
             }
         }
     }
@@ -86,22 +87,18 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
         return INVALID_SESSION;
     }
 
-    // TODO: check session expiration
-
-    // TODO: handle tcp flags (ignore the validation & update of expire first)
-    if (tcp_header->syn && tcp_header->ack && session->syn_state == 0) {
+    // handle tcp flags
+    if (tcp_header->syn && session->syn_state == 0 && tcp_header->ack && htonl(tcp_header->ack_seq) > session->client_last_state_seq) {
         session->syn_state = 2;
+        session->server_last_state_seq = htonl(tcp_header->seq);
     }
     else {
-        if (tcp_header->ack) {
-            if (session->server_fin_state == 1) {
-                session->server_fin_state = 2;
-            }
+        if (tcp_header->ack && session->server_fin_state == 1 && htonl(tcp_header->ack_seq) > session->client_last_state_seq) {
+            session->server_fin_state = 2;
         }
-        if (tcp_header->fin) {
-            if (session->client_fin_state == 0) {
-                session->client_fin_state = 1;
-            }
+        if (tcp_header->fin && session->client_fin_state == 0) {
+            session->client_fin_state = 1;
+            session->server_last_state_seq = htonl(tcp_header->seq);
         }
     }
 
