@@ -39,7 +39,7 @@ int main()
         perror("fail create tap");
     }
 
-    u_int8_t buf[2048];
+    uint8_t buf[2048];
 
     int i, n;
     while(1) {

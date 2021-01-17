@@ -8,6 +8,10 @@
 #include <netinet/ether.h>
 #include <netpacket/packet.h>
 #include <linux/if.h>
+#include <linux/if_tun.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <stdint.h>
 
 #define MAX_BUF 3000
 #define LOCAL_PORT 8080
@@ -76,8 +80,87 @@ uint8_t decode_to_bytes(char* str) {
     return result;
 }
 
+// Trial tun
+int tun_alloc(char *dev)
+{
+    struct ifreq ifr;
+    int fd, err;
+
+    if( (fd = open("/dev/net/tun", O_RDWR)) < 0 )
+        return -1;
+
+    memset(&ifr, 0, sizeof(ifr));
+
+    ifr.ifr_flags = IFF_TUN; 
+    if( *dev )
+        strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+    if( (err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0 ){
+        close(fd);
+        return err;
+    }
+    strcpy(dev, ifr.ifr_name);
+    return fd;
+}   
+
+int main()
+{
+    /*
+# run this for the first time
+sudo ip tuntap add tun0 mode tun
+# start the program
+sudo ./server
+# turn on tun0
+sudo ip link set tun0 up
+# set ip for the tun0
+sudo ip addr add 10.10.1.2/24 dev tun0
+# set arp for tun0
+sudo arp -s 10.10.1.1 0a:0b:0c:0d:0e:0f -i tun0
+# set default route via tun0
+sudo ip route add 123.123.123.123 via 10.10.1.1 dev tun0
+    */
+    char dev[] = "tun0";
+    int fd = tun_alloc(dev);
+    if (fd <= 0) {
+        perror("fail create tun");
+    }
+
+    struct session_hash_table table;
+    int rst_size;
+    init_hash_table(&table, 10, 10000, 10002);
+    
+    uint8_t buf[2048];
+    uint8_t *payload = buf + 4;
+    
+
+    int i, n;
+    while(1) {
+        n = read(fd, buf, 2048);
+        if (n < 2) {
+            break;
+        }
+        n -= 4;
+        printf("len [%d]\n", n);
+        for (i=0; i<n; ++i) {
+            printf("%02x", payload[i]);
+        }
+        if (handle_client_packet(&table, payload, n, &rst_size) == INVALID_SESSION) {
+            printf("session invalid\n");
+        } else {
+            printf("session is valid\n");
+        }
+        printf("\n\n\n");
+
+        print_session_hash_table(&table);
+    }
+
+    close(fd);
+}
+
+
+
 // Trial handle tcp flag
-int main() {
+int main5() {
     struct session_hash_table table;
     init_hash_table(&table, 100, 32928, 33000);
 
