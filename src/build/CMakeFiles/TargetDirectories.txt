@@ -1,2 +1,0 @@
-/home/benker/Desktop/benker-vpn/src/build/CMakeFiles/client.dir
-/home/benker/Desktop/benker-vpn/src/build/CMakeFiles/server.dir

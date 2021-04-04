@@ -1,1 +1,0 @@
-/usr/bin/cc      CMakeFiles/server.dir/server/main.c.o CMakeFiles/server.dir/lib/packet_handler.c.o CMakeFiles/server.dir/lib/protocol_headers.c.o CMakeFiles/server.dir/lib/session_struct.c.o CMakeFiles/server.dir/lib/udp.c.o CMakeFiles/server.dir/lib/vpn_raw_sock.c.o  -o server -rdynamic 
