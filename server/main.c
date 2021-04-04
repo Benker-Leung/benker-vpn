@@ -202,7 +202,7 @@ int main5() {
     }
     // second SYN
     pos = packets[1];
-    for (i=0; i<strlen(packets[0])/2; i++) {
+    for (i=0; i<strlen(packets[1])/2; i++) {
         buffer[i] = decode_to_bytes(pos);
         pos += 2;
     }
@@ -211,7 +211,7 @@ int main5() {
     }
     // second SYN ACK
     pos = packets[2];
-    for (i=0; i<strlen(packets[0])/2; i++) {
+    for (i=0; i<strlen(packets[2])/2; i++) {
         buffer[i] = decode_to_bytes(pos);
         pos += 2;
     }
@@ -220,16 +220,42 @@ int main5() {
     }
     // normal data packets
     pos = packets[3];
-    for (i=0; i<strlen(packets[0])/2; i++) {
+    for (i=0; i<strlen(packets[3])/2; i++) {
         buffer[i] = decode_to_bytes(pos);
         pos += 2;
     }
     if (handle_client_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
-        printf("invalid session for normal data\n");
+        printf("invalid session for normal data [%d]\n", 3);
     }
+    pos = packets[4];
+    for (i=0; i<strlen(packets[4])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_world_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session for normal data [%d]\n", 4);
+    }
+    pos = packets[5];
+    for (i=0; i<strlen(packets[5])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_world_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session for normal data [%d]\n", 5);
+    }
+    pos = packets[6];
+    for (i=0; i<strlen(packets[6])/2; i++) {
+        buffer[i] = decode_to_bytes(pos);
+        pos += 2;
+    }
+    if (handle_client_packet(&table, buffer, MAX_BUF, &rst_size) != VALID_SESSION) {
+        printf("invalid session for normal data [%d]\n", 6);
+    }
+
+
     // 1st FIN
     pos = packets[7];
-    for (i=0; i<strlen(packets[0])/2; i++) {
+    for (i=0; i<strlen(packets[7])/2; i++) {
         buffer[i] = decode_to_bytes(pos);
         pos += 2;
     }
@@ -238,7 +264,7 @@ int main5() {
     }
     // 2nd FIN
     pos = packets[8];
-    for (i=0; i<strlen(packets[0])/2; i++) {
+    for (i=0; i<strlen(packets[8])/2; i++) {
         buffer[i] = decode_to_bytes(pos);
         pos += 2;
     }
@@ -247,7 +273,7 @@ int main5() {
     }
     // final ACK
     pos = packets[9];
-    for (i=0; i<strlen(packets[0])/2; i++) {
+    for (i=0; i<strlen(packets[9])/2; i++) {
         buffer[i] = decode_to_bytes(pos);
         pos += 2;
     }
