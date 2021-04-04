@@ -3,18 +3,18 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/epoll.h>
-#include "../lib/udp.h"
+#include "udp.h"
 
 
 #define MAX_BUF 3000
 #define LOCAL_PORT 8080
 
 
-void
-test()
-{
-    struct epoll_event ev;
-}
+// void
+// test()
+// {
+//     struct epoll_event ev;
+// }
 
 int 
 main()

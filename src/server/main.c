@@ -2,9 +2,9 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
-#include "../lib/udp.h"
-#include "../lib/packet_handler.h"
-#include "../lib/session_struct.h"
+#include "udp.h"
+#include "packet_handler.h"
+#include "session_struct.h"
 #include <netinet/ether.h>
 #include <netpacket/packet.h>
 #include <linux/if.h>
