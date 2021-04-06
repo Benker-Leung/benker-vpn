@@ -1,3 +1,5 @@
+// gcc main.c -lnetlink
+
 #define _GNU_SOURCE
 // #include <sys/types.h>
 // #include <sys/stat.h>
@@ -5,11 +7,11 @@
 // #include <net/if_arp.h>
 // #include <sched.h>
 // #include <limits.h>
-// #include <linux/netlink.h>
 
 #include <unistd.h> // for sleep
 #include <errno.h>
 #include <string.h> // strlcpy
+#include <libnetlink.h>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -17,6 +19,8 @@
 #include <linux/if_tun.h>
 #include <net/if.h>
 #include <linux/rtnetlink.h>
+#include <linux/netlink.h>
+
 
 
 #define TUN_NAME "benker-vpn-tun"
@@ -76,7 +80,7 @@ int add_tun() {
     struct ifreq _ifr;
     struct ifreq *ifr = &_ifr;
 
-    ifr->ifr_flags |= IFF_NO_PI | IFF_TUN | IFF_VNET_HDR;
+    ifr->ifr_flags |= IFF_NO_PI | IFF_TUN ;
     strncpy(ifr->ifr_name, TUN_NAME, IFNAMSIZ);  // actual length is 15 (including NULL char)
 
 #ifdef IFF_TUN_EXCL
@@ -101,6 +105,46 @@ int set_int_up(const char *dev) {
     return do_chflags(dev, IFF_UP, IFF_UP);
 }
 
+// equivalent to "ip route add default via 10.0.0.1"
+int set_default_route() {
+
+	int ret;
+
+	struct rtnl_handle rth = { .fd = -1 };
+	if (rtnl_open(&rth, 0) < 0) {
+		return -1;
+	}
+
+	struct {
+		struct nlmsghdr	n;
+		struct rtmsg r;
+		char buf[4096];
+	} req = { 0	};
+
+	req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL;
+	req.n.nlmsg_type = RTM_NEWROUTE;
+	req.r.rtm_family = AF_INET;
+	req.r.rtm_table = RT_TABLE_MAIN;
+	req.r.rtm_protocol = RTPROT_BOOT;
+	req.r.rtm_scope = RT_SCOPE_UNIVERSE;
+	req.r.rtm_type = RTN_UNICAST;
+	req.r.rtm_dst_len = 0;
+
+	__u32 tunip[2];
+	__u8* data = &tunip;
+	data[0] = 10;
+	data[1] = 0;
+	data[2] = 0;
+	data[3] = 1;
+
+	ret = addattr_l(&req.n, sizeof(req), RTA_GATEWAY, &tunip, 4);
+	ret = rtnl_talk(&rth, &req.n, NULL);
+
+	rtnl_close(&rth);
+	return ret;
+}
+
 
 int main() {
 
@@ -116,6 +160,13 @@ int main() {
         printf("fail to set dev up\n");
         exit(-1);
     }
+
+	// sleep 10 seconds
+	printf("set the ip addr\n");
+	sleep(5);
+	printf("assume already set ip addr, call ip route now\n");
+	
+	printf("default route %d\n", set_default_route());
 
 
     char buf[4096];
