@@ -30,3 +30,10 @@ int read_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* ra
     socklen_t len = sizeof(struct sockaddr_in);;
     return recvfrom(fd, buffer, size, MSG_WAITALL, (struct sockaddr*)raddr, &len);
 }
+
+int fill_port_ip(struct sockaddr_in* addr, int port, const char* ip)
+{
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons(port);
+    return inet_aton(ip, &addr->sin_addr);
+}
