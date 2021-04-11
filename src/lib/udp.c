@@ -6,12 +6,16 @@ int get_udp_socket_client()
     return socket(AF_INET, SOCK_DGRAM, 0);
 }
 
-int get_udp_socket_server(struct sockaddr_in* laddr)
+int get_udp_socket_server(int port)
 {
+    struct sockaddr_in laddr;
+    laddr.sin_family = AF_INET;
+    laddr.sin_addr.s_addr = INADDR_ANY;
+    laddr.sin_port = htons(port);
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd == -1) 
         return -1;
-    if (bind(fd, (const struct sockaddr*)laddr, sizeof(struct sockaddr_in)) != 0)
+    if (bind(fd, (const struct sockaddr*)&laddr, sizeof(struct sockaddr_in)) != 0)
         return -1;
     return fd;
 }

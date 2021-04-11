@@ -24,11 +24,8 @@ main()
         printf("fail to setup tun\n");
         return -1;
     }
-    struct sockaddr_in laddr;
-    laddr.sin_family = AF_INET;
-    laddr.sin_addr.s_addr = INADDR_ANY;
-    laddr.sin_port = htons(LOCAL_PORT);
-    int fd = get_udp_socket_server(&laddr);
+
+    int fd = get_udp_socket_server(LOCAL_PORT);
     
     struct sockaddr_in raddr;
     int total_read;

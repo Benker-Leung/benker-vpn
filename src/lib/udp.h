@@ -17,11 +17,11 @@ int get_udp_socket_client();
 /**
  * get the udp socket fd for server, also bind with the laddr given
  * 
- * @param laddr the local address bind to (ip & port)
+ * @param port the port used (0.0.0.0:port)
  * 
  * @return the file descriptor if success, else -1 for errors (fail to create socket or bind to laddr)
 */
-int get_udp_socket_server(struct sockaddr_in* laddr);
+int get_udp_socket_server(int port);
 
 /**
  * send message via udp
