@@ -145,6 +145,45 @@ int set_default_route() {
 	return ret;
 }
 
+// equivalent to "ip route add default via 10.0.0.1"
+int set_default_ip_addr() {
+
+	int ret;
+
+	struct rtnl_handle rth = { .fd = -1 };
+	if (rtnl_open(&rth, 0) < 0) {
+		return -1;
+	}
+
+	struct {
+		struct nlmsghdr	n;
+		struct ifaddrmsg ifa;
+		char buf[256];
+	} req = { 0	};
+
+	req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL;
+	req.n.nlmsg_type = RTM_NEWADDR;
+	req.ifa.ifa_family = AF_INET;
+	req.ifa.ifa_prefixlen = 24;		// 10.0.0.1/24
+	req.ifa.ifa_scope = 0;
+	req.ifa.ifa_index = if_nametoindex("benker-vpn-tun");
+
+
+	__u32 tunip[2];
+	__u8* data = &tunip;
+	data[0] = 10;
+	data[1] = 0;
+	data[2] = 0;
+	data[3] = 1;
+
+	ret = addattr_l(&req.n, sizeof(req), IFA_LOCAL, &tunip, 4);
+	ret = addattr_l(&req.n, sizeof(req), IFA_ADDRESS, &tunip, 4);
+	ret = rtnl_talk(&rth, &req.n, NULL);
+	
+	rtnl_close(&rth);
+	return ret;
+}
 
 int main() {
 
@@ -160,12 +199,8 @@ int main() {
         printf("fail to set dev up\n");
         exit(-1);
     }
-
-	// sleep 10 seconds
-	printf("set the ip addr\n");
-	sleep(5);
-	printf("assume already set ip addr, call ip route now\n");
 	
+	printf("default ip addr %d\n", set_default_ip_addr());
 	printf("default route %d\n", set_default_route());
 
 
