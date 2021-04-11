@@ -1,27 +1,4 @@
-// gcc main.c -lnetlink
-
-#define _GNU_SOURCE
-// #include <sys/types.h>
-// #include <sys/stat.h>
-// #include <sys/eventfd.h>
-// #include <net/if_arp.h>
-// #include <sched.h>
-// #include <limits.h>
-
-#include <unistd.h> // for sleep
-#include <errno.h>
-#include <string.h> // strlcpy
-#include <libnetlink.h>
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/if_tun.h>
-#include <net/if.h>
-#include <linux/rtnetlink.h>
-#include <linux/netlink.h>
-
-#define TUN_NAME "benker-vpn-tun"
+#include "ip_command.h"
 
 // helper func
 static int get_ctl_fd(void)
@@ -40,7 +17,6 @@ static int get_ctl_fd(void)
 	if (fd >= 0)
 		return fd;
 	errno = s_errno;
-	perror("Cannot create control socket");
 	return -1;
 }
 // helper func
@@ -56,7 +32,7 @@ static int do_chflags(const char *dev, __u32 flags, __u32 mask)
 		return -1;
 	err = ioctl(fd, SIOCGIFFLAGS, &ifr);
 	if (err) {
-		perror("SIOCGIFFLAGS");
+		return -1;
 		close(fd);
 		return -1;
 	}
@@ -65,7 +41,7 @@ static int do_chflags(const char *dev, __u32 flags, __u32 mask)
 		ifr.ifr_flags |= mask&flags;
 		err = ioctl(fd, SIOCSIFFLAGS, &ifr);
 		if (err)
-			perror("SIOCSIFFLAGS");
+			return -1;
 	}
 	close(fd);
 	return err;
@@ -183,38 +159,20 @@ int set_default_ip_addr() {
 	return ret;
 }
 
-int main() {
 
-    
-    // create tun
-    int tun_fd;
-    if ((tun_fd = add_tun()) < 0) {
-        printf("fail to add tun\n");
-        exit(-1);
+int setup_tun() {
+    int ret;
+    if ((ret = add_tun()) < 0) {
+        return -1;
     }
-    // set tun up
-    if (set_int_up(TUN_NAME) < 0) {
-        printf("fail to set dev up\n");
-        exit(-1);
+    if ((ret = set_int_up("benker-vpn-tun")) < 0) {
+        return -1;
     }
-	
-	printf("default ip addr %d\n", set_default_ip_addr());
-	printf("default route %d\n", set_default_route());
-
-
-    char buf[4096];
-    int i, n;
-    while (1) {
-        n = read(tun_fd, buf, 4096);
-        if (n < 0) {
-            printf("n < 0\n");
-            break;
-        }
-        printf("len [%d]\n", n);
-        for (i=0; i<n; ++i) {
-            printf("%02x", buf[i]);
-        }
-        printf("\n\n\n");
+    if ((ret = set_default_ip_addr()) < 0) {
+        return -1;
     }
-
+    if ((ret = set_default_route()) < 0) {
+        return -1;
+    }
+    return 0;
 }

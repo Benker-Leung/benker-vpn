@@ -12,6 +12,7 @@ set(LIB lib/packet_handler.c
 
 # similar to gcc *.c
 add_executable(client   client/main.c
+                        lib/ip_command.c
                         ${LIB})
 add_executable(server   server/main.c
                         ${LIB})
@@ -20,6 +21,8 @@ add_executable(server   server/main.c
 target_include_directories(client PRIVATE lib)
 target_include_directories(server PRIVATE lib)
 
+# link the library libnetlink.so
+target_link_libraries(client netlink)
 
 # usage:  (run the command in directory of this file)
 # mkdir -p build 

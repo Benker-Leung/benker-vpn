@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include "udp.h"
+#include "ip_command.h"
 
 
 #define MAX_BUF 3000
@@ -19,6 +20,10 @@
 int 
 main()
 {
+    if (setup_tun()) {
+        printf("fail to setup tun\n");
+        return -1;
+    }
     struct sockaddr_in laddr;
     laddr.sin_family = AF_INET;
     laddr.sin_addr.s_addr = INADDR_ANY;
