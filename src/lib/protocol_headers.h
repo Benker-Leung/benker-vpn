@@ -20,6 +20,16 @@
 */
 int validate_ip_tcp(uint8_t *buffer, int buffer_size, struct iphdr** ip_header, struct tcphdr** tcp_header);
 
+/**
+ * replace ip & port (just the combined version of the two function below)
+ * 
+ * @param buffer the buffer should start with and contains ip header, tcp header, tcp payload
+ * @param ip the ip, e.g 1 means ip 0.0.0.1
+ * @param the port to be put into, e.g "80" means port 80
+ * 
+ * 
+*/
+void replace_src_ip_port(uint8_t *buffer, uint32_t ip, uint16_t port);
 
 /**
  * replace the source port with given port, and the tcp checksum will be recalculated

@@ -100,6 +100,11 @@ int validate_ip_tcp(uint8_t *buffer, int buffer_size, struct iphdr** ip_header_p
     return VALID_IP_TCP;
 }
 
+void replace_src_ip_port(uint8_t *buffer, uint32_t ip, uint16_t port) {
+    replace_src_ip(buffer, ip);
+    replace_src_port(buffer, port);
+}
+
 void replace_src_port(uint8_t *buffer, uint16_t port) {
     struct iphdr* ip_header = (struct iphdr*)buffer;
     int ip_header_size = ip_header->ihl*4;
