@@ -28,7 +28,7 @@ int send_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* ds
 int read_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* raddr)
 {
     socklen_t len = sizeof(struct sockaddr_in);;
-    return recvfrom(fd, buffer, size, MSG_WAITALL, (struct sockaddr*)raddr, &len);
+    return recvfrom(fd, buffer, size, MSG_DONTWAIT, (struct sockaddr*)raddr, &len);
 }
 
 int fill_port_ip(struct sockaddr_in* addr, int port, const char* ip)

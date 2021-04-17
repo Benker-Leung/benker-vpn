@@ -30,7 +30,7 @@ int get_udp_socket_client();
 int get_udp_socket_server(int port);
 
 /**
- * send message via udp
+ * send message via udp, blocking
  * 
  * @param fd file descriptor of the socket
  * @param buffer pointer to the message
@@ -43,14 +43,14 @@ int get_udp_socket_server(int port);
 int send_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* dst);
 
 /**
- * receive message via udp
+ * receive message via udp, non-blocking
  * 
  * @param fd file descriptor of the socket
  * @param buffer pointer to buffer for storing the msg
  * @param size size of the buffer in bytes
  * @param raddr the remote address
  * 
- * @return total bytes read, -ve for errors
+ * @return total bytes read, 0 for no data ready, -ve for errors
 */
 int read_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* raddr);
 

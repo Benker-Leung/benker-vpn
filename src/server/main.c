@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "udp.h"
 #include "vpn_raw_sock.h"
+#include <stdlib.h>
 
 #define MAX_BUF 3000
 #define LOCAL_PORT 8080
@@ -56,13 +57,20 @@ int main()
     uint8_t send_buf[4096];
 
     while (1) {
-        ret = get_ip_frame(rawfd, buf, 4096, ll);
+        ret = get_ip_packet(rawfd, buf, 4096, ll);
+        if (ret == 0) {
+            continue;
+        } else if (ret < 0) {
+            perror("read err");
+            exit(-1);
+        }
+        printf("read %d bytes\n", ret);
         for (i=0; i<ret; i++) {
             printf("%02X ", buf[i]);
         }
         printf("\n\n");
-        send_ip_frame(rawfd, send_buf, 40, ll);
-        exit(0);
+        // send_ip_packet(rawfd, send_buf, 40, ll);
+        // exit(0);
     }
 
 
