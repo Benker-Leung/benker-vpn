@@ -14,6 +14,10 @@
 
 struct vpn_server {
 
+    // vpn server info
+    uint32_t local_ip;
+    unsigned char mac_addr[6];
+    int net_dev_ind;
     // buffer for packets
     uint8_t buf[MAX_BUF];
     int buf_len;
@@ -23,16 +27,21 @@ struct vpn_server {
     // raw socket related
     struct sockaddr_ll ll;      // for reading/sending via raw-socket
     int rawfd;
-    uint32_t local_ip;
     // mapping related
     struct session_hash_table table;
 
 };
 
 void init_vpn_server(struct vpn_server* s) {
+
+    // 192.168.122.234
+    s->local_ip = 3232266986;                       // TODO: update to dynamic search
+    // 52:54:00:48:1c:20
+    s->mac_addr[0] = 82; s->mac_addr[1] = 84; s->mac_addr[2] = 0; s->mac_addr[3] = 72; s->mac_addr[4] = 28; s->mac_addr[5] = 32;
+    s->net_dev_ind = 2;                             // TODO: update to dynamic search
+
     init_hash_table(&s->table, 200, 40000, 41000);
     s->buf_len = MAX_BUF;
-    s->local_ip = 1;                                // TODO: update to dynamic search
     int ret;
     ret = get_udp_socket_server(LOCAL_PORT);
     if (ret < 0) {
