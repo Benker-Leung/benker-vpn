@@ -1,12 +1,52 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "udp.h"
-#include "vpn_raw_sock.h"
 #include <stdlib.h>
 
-#define MAX_BUF 3000
-#define LOCAL_PORT 8080
+#include "udp.h"
+#include "vpn_raw_sock.h"
+#include "protocol_headers.h"
+#include "session_struct.h"
+#include "packet_handler.h"
 
+#define MAX_BUF 9000            // for buffer size
+#define LOCAL_PORT 8080         // for udp server port listen
+
+
+struct vpn_server {
+
+    // buffer for packets
+    uint8_t buf[MAX_BUF];
+    int buf_len;
+    // udp socket related
+    struct sockaddr_in raddr;   // for reading/sending via udp-socket
+    int udpfd;
+    // raw socket related
+    struct sockaddr_ll ll;      // for reading/sending via raw-socket
+    int rawfd;
+    uint32_t local_ip;
+    // mapping related
+    struct session_hash_table table;
+
+};
+
+void init_vpn_server(struct vpn_server* s) {
+    init_hash_table(&s->table, 200, 40000, 41000);
+    s->buf_len = MAX_BUF;
+    s->local_ip = 1;                                // TODO: update to dynamic search
+    int ret;
+    ret = get_udp_socket_server(LOCAL_PORT);
+    if (ret < 0) {
+        perror("fail udp socket");
+        exit(-1);
+    }
+    s->udpfd = ret;
+    ret = get_vpn_raw_socket();
+    if (ret < 0) {
+        perror("fail raw socket");
+        exit(-1);
+    }
+    s->rawfd = ret;
+}
 
 int main()
 {
@@ -25,52 +65,55 @@ int main()
     
     */
 
-    // int fd = get_udp_socket_server(LOCAL_PORT);
-    // if (fd == -1) {
-    //     perror("fail to get udp socket client");
-    //     exit(-1);
-    // }
-
-    // char buf[MAX_BUF];
-    // struct sockaddr_in raddr;
-    // int ret;
-
-    // while (1) {
-    //     ret = read_msg_udp(fd, buf, MAX_BUF, &raddr);
-    //     if (ret < 0) {
-    //         perror("read_msg_udp");
-    //         exit(-1);
-    //     }
-    //     printf("read %d bytes\n", ret);
-    // }
-
-    struct sockaddr_ll _ll;
-    struct sockaddr_ll* ll = &_ll;
-    int rawfd = get_vpn_raw_socket();
-    if (rawfd < 0) {
-        perror("fail to get raw socket fd");
-        exit(-1);
-    }
-
-    int ret, i;
-    uint8_t buf[4096];
-    uint8_t send_buf[4096];
+    int ret, i, reset_packet_size, read_len;
+    struct vpn_server s;
+    init_vpn_server(&s);
 
     while (1) {
-        ret = get_ip_packet(rawfd, buf, 4096, ll);
-        if (ret == 0) {
-            continue;
-        } else if (ret < 0) {
-            perror("read err");
-            exit(-1);
-        }
-        printf("read %d bytes\n", ret);
-        for (i=0; i<ret; i++) {
-            printf("%02X ", buf[i]);
-        }
-        printf("\n\n");
-        // send_ip_packet(rawfd, send_buf, 40, ll);
-        // exit(0);
+        
+        // get ip packet from udp
+        ret = read_msg_udp(s.udpfd, s.buf, s.buf_len, &s.raddr);
+        // TODO: handle the return value
+
+        // handle the ip packet (replace the src ip + port)
+        read_len = ret;
+        ret = handle_client_packet(&s.table, s.buf, s.buf_len, s.local_ip, &reset_packet_size);
+        // TODO: handle the return value
+
+        // send the handled ip packet
+        // TODO: fill in the ll before sending packet
+        ret = send_ip_packet(s.rawfd, s.buf, read_len, &s.ll);
+
+        // get ip packet from real world
+        ret = get_ip_packet(s.rawfd, s.buf, s.buf_len, &s.ll);
+        // TODO: handle the return value
+
+        read_len = ret;
+        ret = handle_world_packet(&s.table, s.buf, s.buf_len, &reset_packet_size);
+        // TOOD: handle the return value
+
+        // send the handled ip packet
+        // TODO: fill in the remote addr before sending
+        ret = send_msg_udp(s.udpfd, s.buf, read_len, &s.raddr);
+
+
+        // // code for trial
+        // // get ip packet from raw
+        // ret = get_ip_packet(s.rawfd, s.buf, s.buf_len, &s.ll);
+        // if (ret == 0) {
+        //     continue;
+        // } else if (ret < 0) {
+        //     perror("read err");
+        //     exit(-1);
+        // }
+        // printf("read %d bytes\n", ret);
+        // replace_src_ip_port(s.buf, 1, 22);
+        // ret = send_ip_packet(s.rawfd, s.buf, ret, &s.ll);
+        // if (ret < 0) {
+        //     perror("write err");
+        //     exit(-1);
+        // }
+        // printf("sent %d bytes\n", ret);
     }
 
 
