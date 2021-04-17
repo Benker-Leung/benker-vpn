@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "udp.h"
+#include "ip_command.h"
 
 #define MAX_BUF 3000
 #define LOCAL_PORT 8080
@@ -21,6 +22,13 @@ int main()
 
     */
 
+   int ret;
+
+    if (setup_tun()) {
+        perror("fail to setup tunnel");
+        exit(-1);
+    }
+
     int fd = get_udp_socket_client();
     if (fd == -1) {
         perror("fail to get udp socket client");
@@ -29,7 +37,6 @@ int main()
 
     char buf[MAX_BUF] = {100, 101, 102, 103, 0};
     struct sockaddr_in raddr;
-    int ret;
 
     fill_port_ip(&raddr, 8080, "127.0.0.1");
 
