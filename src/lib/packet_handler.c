@@ -1,9 +1,8 @@
 #include "packet_handler.h"
 
-int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, int *rst_size) {
+int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, uint32_t vpn_server_ip, int *rst_size) {
     struct iphdr *ip_header;
     struct tcphdr *tcp_header;
-    // TODO, remove the || 1
     if (validate_ip_tcp(buffer, buffer_len, &ip_header, &tcp_header) == INVALID_IP_TCP) {
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
@@ -43,11 +42,8 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
     }
 
     // replace ip & port
-    // TODO: replace ip here
-    replace_src_port(buffer, session->server_port);
+    replace_src_ip_port(buffer, vpn_server_ip, session->server_port);
     return VALID_SESSION;
-
-    // TODO
     /*
         // pseudocode for the handling logic
 
@@ -73,7 +69,6 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
 int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, int *rst_size) {
     struct iphdr *ip_header;
     struct tcphdr *tcp_header;
-    // TODO, remove the || 1
     if (validate_ip_tcp(buffer, buffer_len, &ip_header, &tcp_header) == INVALID_IP_TCP) {
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
@@ -103,11 +98,9 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
     }
 
     // replace ip & port
-    // TODO: replace ip here
-    replace_src_port(buffer, session->server_port);
+    replace_src_ip_port(buffer, session->client_ip, session->client_port);
     return VALID_SESSION;
 
-    // TODO
     /*
         // pseudocode for the handling logic
 
@@ -122,7 +115,7 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
         
         handle_flag(packet, session)    // update the session info, and expire time
 
-        replace_src(packet, server_ip, session.server_port)
+        replace_src(packet, client_ip, session.client_port)
 
         return VALID_SESSION        
 

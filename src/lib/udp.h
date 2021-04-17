@@ -48,7 +48,7 @@ int send_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* ds
  * @param fd file descriptor of the socket
  * @param buffer pointer to buffer for storing the msg
  * @param size size of the buffer in bytes
- * @param raddr the remote address
+ * @param raddr the remote address (filled with sender info)
  * 
  * @return total bytes read, 0 for no data ready, -ve for errors
 */
