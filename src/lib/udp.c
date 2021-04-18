@@ -28,7 +28,15 @@ int send_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* ds
 int read_msg_udp(int fd, unsigned char* buffer, int size, struct sockaddr_in* raddr)
 {
     socklen_t len = sizeof(struct sockaddr_in);;
-    return recvfrom(fd, buffer, size, MSG_DONTWAIT, (struct sockaddr*)raddr, &len);
+    int ret = recvfrom(fd, buffer, size, MSG_DONTWAIT, (struct sockaddr*)raddr, &len);
+    if (ret < 0) {
+        if (errno != EAGAIN || errno != EWOULDBLOCK) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
+    return ret;
 }
 
 int fill_port_ip(struct sockaddr_in* addr, int port, const char* ip)

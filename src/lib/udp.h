@@ -11,6 +11,7 @@
 #include <netinet/udp.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 /**
  * get the udp socket fd for client

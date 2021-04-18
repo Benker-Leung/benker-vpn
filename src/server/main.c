@@ -18,6 +18,7 @@ struct vpn_server {
     uint32_t local_ip;
     unsigned char mac_addr[6];
     int net_dev_ind;
+    uint32_t client_ip;
     // buffer for packets
     uint8_t buf[MAX_BUF];
     int buf_len;
@@ -39,6 +40,13 @@ void init_vpn_server(struct vpn_server* s) {
     // 52:54:00:48:1c:20
     s->mac_addr[0] = 82; s->mac_addr[1] = 84; s->mac_addr[2] = 0; s->mac_addr[3] = 72; s->mac_addr[4] = 28; s->mac_addr[5] = 32;
     s->net_dev_ind = 2;                             // TODO: update to dynamic search
+
+    // init struct sockaddr_ll
+    s->ll.sll_family = AF_PACKET;
+    s->ll.sll_ifindex = s->net_dev_ind;
+    s->ll.sll_protocol = IPPROTO_IP;
+    s->ll.sll_halen = 6;
+    memcpy(s->ll.sll_addr, s->mac_addr, 6);
 
     init_hash_table(&s->table, 200, 40000, 41000);
     s->buf_len = MAX_BUF;
@@ -82,29 +90,56 @@ int main()
         
         // get ip packet from udp
         ret = read_msg_udp(s.udpfd, s.buf, s.buf_len, &s.raddr);
-        // TODO: handle the return value
+        if (ret < 0) {
+            perror("udp read");
+            exit(-1);
+        } else if (ret == 0) {
+            goto NEXT;
+        }
+        printf("udp read %d bytes\n", ret);
 
         // handle the ip packet (replace the src ip + port)
         read_len = ret;
         ret = handle_client_packet(&s.table, s.buf, s.buf_len, s.local_ip, &reset_packet_size);
-        // TODO: handle the return value
+        if (ret == INVALID_SESSION) {
+            goto NEXT;
+        }
+        printf("handled 1 client packet\n");
 
         // send the handled ip packet
-        // TODO: fill in the ll before sending packet
         ret = send_ip_packet(s.rawfd, s.buf, read_len, &s.ll);
+        if (ret < 0) {
+            perror("udp send");
+            exit(-1);
+        }
+        printf("sent client packet %d bytes to real world\n", ret);
 
+NEXT:
         // get ip packet from real world
-        ret = get_ip_packet(s.rawfd, s.buf, s.buf_len, &s.ll);
-        // TODO: handle the return value
+        ret = get_ip_packet(s.rawfd, s.buf, s.buf_len, NULL);
+        if (ret < 0) {
+            perror("raw read");
+            exit(-1);
+        } else if (ret == 0) {
+            continue;
+        }
+        printf("raw read %d bytes\n", ret);
 
         read_len = ret;
-        ret = handle_world_packet(&s.table, s.buf, s.buf_len, &reset_packet_size);
-        // TOOD: handle the return value
+        ret = handle_world_packet(&s.table, s.buf, s.buf_len, &reset_packet_size, &s.client_ip);
+        if (ret == INVALID_SESSION) {
+            continue;
+        }
+        printf("handled 1 real-world packet\n");
 
         // send the handled ip packet
-        // TODO: fill in the remote addr before sending
+        // assume only 1 client
         ret = send_msg_udp(s.udpfd, s.buf, read_len, &s.raddr);
-
+        if (ret < 0) {
+            perror("raw send");
+            exit(-1);
+        }
+        printf("sent real-world packet %d bytes to client\n", ret);
 
         // // code for trial
         // // get ip packet from raw

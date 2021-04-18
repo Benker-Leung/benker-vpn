@@ -30,11 +30,12 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
  * @param buffer the pointer to the first byte of ip header
  * @param len the buffer size
  * @param rst_size storing the number of bytes of "reset" packet in case of session problems (wrong packet, no such session etc)
+ * @param client_ip storing the client ip addr
  * 
  * @return 1 (VALID_SESSION) means successfully replaced the packet with source port & source ip
  *         0 (INVALID_SESSION), which the buffer will be filled with "reset" packet, and rst_size will be set to the length of the reset packet
 */
-int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, int *rst_size);
+int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, int *rst_size, uint32_t *client_ip);
 
 
 

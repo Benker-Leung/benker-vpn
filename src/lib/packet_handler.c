@@ -66,7 +66,7 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
 }
 
 
-int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, int *rst_size) {
+int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int buffer_len, int *rst_size, uint32_t *client_ip) {
     struct iphdr *ip_header;
     struct tcphdr *tcp_header;
     if (validate_ip_tcp(buffer, buffer_len, &ip_header, &tcp_header) == INVALID_IP_TCP) {
@@ -97,6 +97,7 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
         }
     }
 
+    *client_ip = session->client_ip;
     // replace ip & port
     replace_src_ip_port(buffer, session->client_ip, session->client_port);
     return VALID_SESSION;
