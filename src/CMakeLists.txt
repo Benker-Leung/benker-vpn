@@ -8,11 +8,11 @@ set(LIB lib/packet_handler.c
         lib/protocol_headers.c
         lib/session_struct.c
         lib/udp.c
-        lib/vpn_raw_sock.c)
+        lib/vpn_raw_sock.c
+        lib/ip_command.c)
 
 # similar to gcc *.c
 add_executable(client   client/main.c
-                        lib/ip_command.c
                         ${LIB})
 add_executable(server   server/main.c
                         ${LIB})
@@ -23,6 +23,7 @@ target_include_directories(server PRIVATE lib)
 
 # link the library libnetlink.so
 target_link_libraries(client netlink)
+target_link_libraries(server netlink)
 
 # usage:  (run the command in directory of this file)
 # mkdir -p build 

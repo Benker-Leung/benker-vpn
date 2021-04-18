@@ -26,7 +26,7 @@
  * $> ip addr add 10.0.0.1/24 benker-vpn-tun
  * $> ip route add default via 10.0.0.1
  * 
- * @return 0 if success, -1 if any parts fail
+ * @return tunnel-fd if success, -1 if any parts fail
  */
 int setup_tun();
 

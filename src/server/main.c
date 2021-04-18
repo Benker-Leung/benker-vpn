@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "udp.h"
 #include "vpn_raw_sock.h"
@@ -42,9 +41,10 @@ void init_vpn_server(struct vpn_server* s) {
     s->net_dev_ind = 2;                             // TODO: update to dynamic search
 
     // init struct sockaddr_ll
+    memset(&s->ll, 0, sizeof(struct sockaddr_ll));
     s->ll.sll_family = AF_PACKET;
     s->ll.sll_ifindex = s->net_dev_ind;
-    s->ll.sll_protocol = IPPROTO_IP;
+    s->ll.sll_protocol = IPPROTO_EGP;
     s->ll.sll_halen = 6;
     memcpy(s->ll.sll_addr, s->mac_addr, 6);
 
@@ -102,9 +102,15 @@ int main()
         read_len = ret;
         ret = handle_client_packet(&s.table, s.buf, s.buf_len, s.local_ip, &reset_packet_size);
         if (ret == INVALID_SESSION) {
+            printf("client invalid session\n");
+            for (i=0; i<read_len; i++) {
+                printf("%02x", s.buf[i]);
+            }
+            printf("\n\n");
             goto NEXT;
         }
         printf("handled 1 client packet\n");
+        print_session_hash_table(&s.table);
 
         // send the handled ip packet
         ret = send_ip_packet(s.rawfd, s.buf, read_len, &s.ll);
@@ -113,6 +119,10 @@ int main()
             exit(-1);
         }
         printf("sent client packet %d bytes to real world\n", ret);
+        for (i=0; i<ret; i++) {
+            printf("%02x ", s.buf[i]);
+        }
+        printf("\n\n");
 
 NEXT:
         // get ip packet from real world
@@ -121,13 +131,19 @@ NEXT:
             perror("raw read");
             exit(-1);
         } else if (ret == 0) {
+            sleep(1);
             continue;
         }
-        printf("raw read %d bytes\n", ret);
+        // printf("raw read %d bytes\n", ret);
 
         read_len = ret;
         ret = handle_world_packet(&s.table, s.buf, s.buf_len, &reset_packet_size, &s.client_ip);
         if (ret == INVALID_SESSION) {
+            printf("raw invalid session: \n");
+            for (i=0; i<read_len; i++) {
+                printf("%02x", s.buf[i]);
+            }
+            printf("\n\n");
             continue;
         }
         printf("handled 1 real-world packet\n");

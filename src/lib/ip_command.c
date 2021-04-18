@@ -61,7 +61,7 @@ int add_tun() {
 	ifr->ifr_flags |= IFF_TUN_EXCL;
 #endif
 
-    fd = open("/dev/net/tun", O_RDWR);
+    fd = open("/dev/net/tun", O_RDWR | O_NONBLOCK);
     if (fd < 0) {
         perror("open");
         return -1;
@@ -106,7 +106,7 @@ int set_default_route() {
 	req.r.rtm_dst_len = 0;
 
 	__u32 tunip[2];
-	__u8* data = &tunip;
+	__u8* data = (__u8*)&tunip;
 	data[0] = 10;
 	data[1] = 0;
 	data[2] = 0;
@@ -145,7 +145,7 @@ int set_default_ip_addr() {
 
 
 	__u32 tunip[2];
-	__u8* data = &tunip;
+	__u8* data = (__u8*)&tunip;
 	data[0] = 10;
 	data[1] = 0;
 	data[2] = 0;
@@ -161,18 +161,22 @@ int set_default_ip_addr() {
 
 
 int setup_tun() {
-    int ret;
+    int ret, fd;
     if ((ret = add_tun()) < 0) {
         return -1;
     }
+	fd = ret;
     if ((ret = set_int_up("benker-vpn-tun")) < 0) {
-        return -1;
+        goto FAIL_SETUP_TUN;
     }
     if ((ret = set_default_ip_addr()) < 0) {
-        return -1;
+        goto FAIL_SETUP_TUN;
     }
     if ((ret = set_default_route()) < 0) {
-        return -1;
+        goto FAIL_SETUP_TUN;
     }
-    return 0;
+    return fd;
+FAIL_SETUP_TUN:
+	close(fd);
+	return -1;
 }

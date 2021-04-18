@@ -11,7 +11,7 @@ int handle_client_packet(struct session_hash_table* table, uint8_t *buffer, int 
     struct tcp_session* session;
     // get session
     if (tcp_header->syn) {
-        session = add_tcp_session(table, ntohl(ip_header->saddr), ntohs(tcp_header->source), 1);
+        session = add_tcp_session(table, ntohl(ip_header->saddr), ntohs(tcp_header->source), 10);
     } else {
         session = get_tcp_session_by_client(table, ntohl(ip_header->saddr), ntohs(tcp_header->source));
     }
@@ -79,6 +79,7 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
     printf("Debug searching world, tcp->dest %d\n", ntohs(tcp_header->dest));
     session = get_tcp_session_by_server(table, ntohs(tcp_header->dest));
     if (session == NULL || session_expired(session)) {
+        printf("session is nil %d\n", session == NULL);
         *rst_size = fillin_reset(buffer);
         return INVALID_SESSION;
     }
