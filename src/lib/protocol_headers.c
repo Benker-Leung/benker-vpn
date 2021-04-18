@@ -122,6 +122,28 @@ void replace_src_ip(uint8_t *buffer, uint32_t src_ip) {
     ip_header->check = htons(ip_csum(ip_header));
 }
 
+void replace_dst_ip_port(uint8_t *buffer, uint32_t ip, uint16_t port) {
+    replace_dst_ip(buffer, ip);
+    replace_dst_port(buffer, port);
+}
+
+void replace_dst_port(uint8_t *buffer, uint16_t port) {
+    struct iphdr* ip_header = (struct iphdr*)buffer;
+    int ip_header_size = ip_header->ihl*4;
+    struct tcphdr* tcp_header = (struct tcphdr*)(buffer + ip_header_size);
+    uint8_t* tcp_data = buffer + ip_header_size + tcp_header->doff*4;     // offset ip & tcp header
+    tcp_header->dest = htons(port);
+    tcp_header->check = 0;
+    tcp_header->check = htons(tcp_csum(ip_header, tcp_header, tcp_data));
+}
+
+void replace_dst_ip(uint8_t *buffer, uint32_t src_ip) {
+    struct iphdr* ip_header = (struct iphdr*)buffer;
+    ip_header->check = 0;   // clear the check-sum
+    ip_header->daddr = htonl(src_ip);
+    ip_header->check = htons(ip_csum(ip_header));
+}
+
 int fillin_reset(uint8_t *buffer) {
     uint32_t temp32;
     uint16_t temp16;

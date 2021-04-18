@@ -21,7 +21,7 @@
 int validate_ip_tcp(uint8_t *buffer, int buffer_size, struct iphdr** ip_header, struct tcphdr** tcp_header);
 
 /**
- * replace ip & port (just the combined version of the two function below)
+ * replace src ip & port (just the combined version of the two function below)
  * 
  * @param buffer the buffer should start with and contains ip header, tcp header, tcp payload
  * @param ip the ip, e.g 1 means ip 0.0.0.1
@@ -52,6 +52,39 @@ void replace_src_port(uint8_t *buffer, uint16_t port);
  * 
 */
 void replace_src_ip(uint8_t *buffer, uint32_t ip);
+
+/**
+ * replace dst ip & port (just the combined version of the two function below)
+ * 
+ * @param buffer the buffer should start with and contains ip header, tcp header, tcp payload
+ * @param ip the ip, e.g 1 means ip 0.0.0.1
+ * @param the port to be put into, e.g "80" means port 80
+ * 
+ * 
+*/
+void replace_dst_ip_port(uint8_t *buffer, uint32_t ip, uint16_t port);
+
+/**
+ * replace the dst port with given port, and the tcp checksum will be recalculated
+ * buffer assume to be correct in length inside the header fields (not responsible for checking the len etc)
+ * 
+ * @param buffer the buffer should start with and contains ip header, tcp header, tcp payload
+ * @param the port to be put into, e.g "80" means port 80
+ * 
+ * 
+*/
+void replace_dst_port(uint8_t *buffer, uint16_t port);
+
+/**
+ * replace the dst ip addr with given new ip addr, and the ip checksum will be recalculated
+ * buffer assume to be correct in length inside the header fields (not responsible for checking the len etc)
+ * 
+ * @param buffer the buffer should start with ip header
+ * @param the ip int number, e.g 1 means ip 0.0.0.1
+ * 
+ * 
+*/
+void replace_dst_ip(uint8_t *buffer, uint32_t ip);
 
 /**
  * modify the buffer(original received packet) into an valid tcp "reset" packet (assume buffer size enough for ip+tcp header)

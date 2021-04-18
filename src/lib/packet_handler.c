@@ -76,6 +76,7 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
 
     struct tcp_session* session;
     // get session
+    printf("Debug searching world, tcp->dest %d\n", ntohs(tcp_header->dest));
     session = get_tcp_session_by_server(table, ntohs(tcp_header->dest));
     if (session == NULL || session_expired(session)) {
         *rst_size = fillin_reset(buffer);
@@ -99,7 +100,7 @@ int handle_world_packet(struct session_hash_table* table, uint8_t *buffer, int b
 
     *client_ip = session->client_ip;
     // replace ip & port
-    replace_src_ip_port(buffer, session->client_ip, session->client_port);
+    replace_dst_ip_port(buffer, session->client_ip, session->client_port);
     return VALID_SESSION;
 
     /*
